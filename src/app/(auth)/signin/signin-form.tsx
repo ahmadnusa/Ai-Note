@@ -1,7 +1,7 @@
-"use client";
+"use client"
 
-import { PasswordInput } from "@/components/password-input";
-import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/password-input"
+import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -9,15 +9,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { AuthFormValues, signinSchema } from "../schema";
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { AuthFormValues, signinSchema } from "../schema"
+import { useAuthActions } from "@convex-dev/auth/react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export function SigninForm() {
-  const [step, setStep] = useState<"signIn" | "signUp">("signIn");
+  const [step, setStep] = useState<"signIn" | "signUp">("signIn")
+
+  const { signIn } = useAuthActions()
+
+  const [isLoading, setIsLoading] = useState(false)
+
+  const { push } = useRouter()
 
   const form = useForm<AuthFormValues>({
     resolver: zodResolver(signinSchema),
@@ -25,10 +34,38 @@ export function SigninForm() {
       email: "",
       password: "",
     },
-  });
+  })
 
   async function onSubmit(values: AuthFormValues) {
-    // TODO: Sign in
+    setIsLoading(true)
+    try {
+      await signIn("password", {
+        ...values,
+        flow: step,
+      })
+      toast.success(
+        step === "signIn"
+          ? "Signed in successfully"
+          : "Account created successfully"
+      )
+      push("/notes")
+    } catch (error) {
+      console.error(error)
+      if (
+        error instanceof Error &&
+        (error.message.includes("InvalidAccountId") ||
+          error.message.includes("InvalidSecret"))
+      ) {
+        form.setError("root", {
+          type: "manual",
+          message: "Invalid credentials.",
+        })
+      } else {
+        toast.error("Something went wrong. Please try again.")
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -81,7 +118,7 @@ export function SigninForm() {
                 {form.formState.errors.root.message}
               </div>
             )}
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {step === "signIn" ? "Sign In" : "Sign Up"}
             </Button>
           </form>
@@ -91,8 +128,8 @@ export function SigninForm() {
           type="button"
           className="w-full text-sm text-muted-foreground cursor-pointer"
           onClick={() => {
-            setStep(step === "signIn" ? "signUp" : "signIn");
-            form.reset(); // Reset form errors and values when switching modes
+            setStep(step === "signIn" ? "signUp" : "signIn")
+            form.reset() // Reset form errors and values when switching modes
           }}
         >
           {step === "signIn"
@@ -101,5 +138,5 @@ export function SigninForm() {
         </Button>
       </div>
     </div>
-  );
+  )
 }
