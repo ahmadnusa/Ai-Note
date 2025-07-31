@@ -1,9 +1,14 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { AIChatButton } from "./ai-chat-button";
-import { CreateNoteButton } from "./create-note-button";
+"use client"
+
+import { Skeleton } from "@/components/ui/skeleton"
+import { AIChatButton } from "./ai-chat-button"
+import { CreateNoteButton } from "./create-note-button"
+import { useQuery } from "convex/react"
+import { api } from "../../../../convex/_generated/api"
+import { NoteItem } from "./note-item"
 
 export function NotesPage() {
-  const notes: [] | undefined = [];
+  const notes = useQuery(api.notes.getNotes)
 
   return (
     <div className="container xl:max-w-6xl mx-auto">
@@ -21,11 +26,13 @@ export function NotesPage() {
         <EmptyView />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {/* TODO: Render user's notes here */}
+          {notes.map((note) => (
+            <NoteItem key={note._id} note={note} />
+          ))}
         </div>
       )}
     </div>
-  );
+  )
 }
 
 function EmptyView() {
@@ -35,7 +42,7 @@ function EmptyView() {
         No notes yet. Create your first note!
       </p>
     </div>
-  );
+  )
 }
 function LoadingSkeleton() {
   return (
@@ -46,5 +53,5 @@ function LoadingSkeleton() {
         </div>
       ))}
     </div>
-  );
+  )
 }
