@@ -24,10 +24,10 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { useAction } from "convex/react"
 import { Plus } from "lucide-react"
-import { useMutation } from "convex/react"
-import { api } from "../../../../convex/_generated/api"
 import { toast } from "sonner"
+import { api } from "../../../../convex/_generated/api"
 
 const noteFormSchema = z.object({
   title: z.string().min(1, {
@@ -58,7 +58,7 @@ interface CreateNoteDialogProps {
 }
 
 function CreateNoteDialog({ open, onOpenChange }: CreateNoteDialogProps) {
-  const createNote = useMutation(api.notes.createNote)
+  const createNote = useAction(api.noteActions.createNote)
 
   const form = useForm<z.infer<typeof noteFormSchema>>({
     resolver: zodResolver(noteFormSchema),
