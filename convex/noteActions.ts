@@ -1,10 +1,10 @@
 "use node"
 
 import { v } from "convex/values"
-import { action } from "./_generated/server"
+import { action, internalAction } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
-import { generateEmbeddings } from "@/lib/embeddings"
-import { Id } from "./_generated/dataModel"
+import { generateEmbedding, generateEmbeddings } from "@/lib/embeddings"
+import { Doc, Id } from "./_generated/dataModel"
 import { internal } from "./_generated/api"
 
 export const createNote = action({
@@ -33,5 +33,35 @@ export const createNote = action({
     )
 
     return noteId
+  },
+})
+
+export const findRelevantNotes = internalAction({
+  args: {
+    query: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args): Promise<Array<Doc<"notes">>> => {
+    const embedding = await generateEmbedding(args.query)
+
+    const results = await ctx.vectorSearch("noteEmbeddings", "by_embedding", {
+      vector: embedding,
+      limit: 16,
+      filter: (q) => q.eq("userId", args.userId),
+    })
+
+    console.log("vector search results: ", results)
+
+    const resultsAboveThreshold = results.filter(
+      (result) => result._score > 0.3
+    )
+
+    const embeddingIds = resultsAboveThreshold.map((result) => result._id)
+
+    const notes = await ctx.runQuery(internal.notes.fetchNotesByEmbeddingIds, {
+      embeddingIds,
+    })
+
+    return notes
   },
 })
